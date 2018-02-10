@@ -1,0 +1,60 @@
+name: Acacia_competition
+dry: no
+results-directory: Hysteresis # absolute or relative to control file dir
+runs: 1
+#submit-command: "echo sh -c \\''cd '$RUNM_RUN_DIR'; R CMD BATCH  '${RUNM_CONFIG_DIR}'/call_EWS_cluster.R'\\' >> ${RUNM_CONFIG_DIR}/queue"
+submit-command: "echo sbatch ${RUNM_CONFIG_DIR}/Veg_prj_run.sh"
+use-environment-variables: no
+parameters-filename: parameters_desert.csv
+run-number-parameter-name: runNumber
+random-seed-parameter-name: randomSeed
+random-seed-bits: 31
+thread-count: 1
+
+constants:
+    m_s: 0.007   	# intrinsic mortality scelophylls
+    m_a: 0.007   # intrinsic mortality Acacia [0.06-0.8] Thesis chico de U de CHile Navarro 1995
+    m_g: 0.023    # intrinsic mortality grass
+    betaS: 0.85 	# colonization rate sclerophylls 
+    betaA: 5  # colonization rate Acacia
+    R: 1.9      # regeneration rate of grass
+    fas: 0.17
+    a: 550
+    del: 0.9  	# seeds dispersed; (1-del) seeds on nearest neighbourhood 
+    fg: 0.20		# local fascilitation grass
+    m_LG: 0.00014   #livestock induced mortality grass
+    m_LS: 0.0001   #livestock induced mortality sclerophylls
+    m_LA: 0.00005   #livestock induced mortality Acacia
+    E_A: 10
+    ini_herd: 200
+    s_A: 2.7
+    ts: 10
+
+sweeps:
+#- !list { parameter: m_LG, values: [0.00006, 0.00008, 0.00010, 0.00012, 0.00014, 0.00016, 0.00018, 0.0002, 0.00022] }
+#- !list { parameter: ini_herd, values: [200, 400] }
+#- !sequence { parameter: ini_herd, from: 20, to: 600, by: 20}
+#- !sequence { parameter: s_A, from: 0, to: 5, by: 1.25 }
+- !sequence { parameter: ts, from: 1, to: 60, by: 1 }
+- !list { parameter: E_A, values: [10, 20] }
+#- !sequence { parameter: R, from: 1.5, to: 2.5, by: 0.5 }
+#- !list { parameter: a, values: [350, 450, 550] }
+#- !list { parameter: del, values: [0.75, 0.80, 0.85, 0.90, 0.95] }
+#- !list { parameter: fas, values: [0.1, 0.2, 0.3, 0.4, 0.5] }
+#- !list { parameter: fg, values: [0.1, 0.2] }
+
+
+# intrinsic mortality scelophylls
+# intrinsic mortality Acacia
+# intrinsic mortality grass
+# colonization rate sclerophylls 
+# colonization rate Acacia
+# regeneration rate of grass
+#facilitation A and S
+# degradation
+#livestock contribution to A colonization
+# seeds dispersed; (1-del) seeds on nearest neighbourhood 
+# local fascilitation grass
+#livestock induced mortality grass
+#livestock induced mortality sclerophylls
+#livestock induced mortality Acacia
