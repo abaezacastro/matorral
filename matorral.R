@@ -6,7 +6,7 @@ class(matorral) <- "ca_model"
 matorral$name <- "Andres' Chilean matorral Model"
 matorral$ref <- NA  # a bibliographic reference
 matorral$states <- c("D","G","A","S")
-matorral$cols <- terrain.colors(4)[c(4,3,2,1)]
+matorral$cols <- c("darkred","lightgreen","yellow","darkgreen")
 # a list of default model parameters, used to validate input parameters. 
 matorral$parms <- list(
   ### vegetation model parameters: 
@@ -18,7 +18,7 @@ matorral$parms <- list(
   R = 1,      # regeneration rate of grass
   fas =1,      # local fascilitation on Sclerophylls 
   a = 7,      # half saturation constant of effect of livestock on Acacia recrutment
-  aridity = 1.0,  # Aridity
+  aridity = 0,  # Aridity
   del = 0.9,  	# seeds dispersed; (1-del) seeds on nearest neighbourhood 
   fg = 0.3, 		# local fascilitation grass
   fss = 1,      # local facilitation of sclerophyllus forest on its own recolonisation
@@ -27,36 +27,9 @@ matorral$parms <- list(
   m_LA=0.005,    # livestock induced mortality Acacia
   n_A=1, ##params of density dependent mortality in acacia
   ic_A=2.7,# 2.7 
-  ### livestock model parameters: 
-  DM_I=2,  
-  ME_Ac=10, #29 #mega-Joules/Kg DM
-  ME_S=49, 
-  ME_G=29, 
-  herd_size = 5, # number of animals per hectare
-  K_mr = 0.31*2, #kids annual mortality rate
-  RS_mr= 0.12,
-  OS_mr= 0.125,
-  B_f_mr=0.12,
-  B_m_mr=0.1,
-  ratio_mf=0.1,
-  fer_kids=0.9,
-  prolificacy=1.0,
-  kidding_rate=1.1,
-  E_m_factor=5,
-  A_Pk = 1
+  ### livestock parameter: 
+  herd_size = 20# number of animals per hectare
 )
-# matorral$livestock <- function(x, l = NULL, herd_size = matorral$parms$herd_size) { #for now a null model returning always the same value
-#               structure(
-#                 data.frame(sex = rep("F", herd_size), 
-#                            age = rep(17, herd_size), 
-#                            type = rep("S", herd_size), 
-#                            d_rate = rep(12, herd_size)
-#                 ),
-#                 class = c("livestock", "data.frame")
-#               )
-#               }
-# an update function
-#browser()
 matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = matorral$parms$herd_size, ...) {
 
    for(ss in 1:subs) {
@@ -79,10 +52,10 @@ matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = 
   #parms$perhectare <- prod(x_old$dim)/(200*200)
   parms$Live <-livestock #*parms$perhectare
   # calculate recolonisation rates of A cells
-  recolonisation_A <- with(parms, betaA*aridity*(del*rho$A*(Live/(a+Live))+(1-del)*Q_A)/subs)
+  recolonisation_A <- with(parms, betaA*(1-aridity)*(del*rho$A*(Live/(a+Live))+(1-del)*Q_A)/subs)
   
   # calculate recolonisation rates of S cells
-  recolonisation_S <- with(parms, betaS*aridity*fss*Q_S/subs)
+  recolonisation_S <- with(parms, betaS*(1-aridity)*fss*Q_S/subs)
   
   # calculate death rates
   death_S <- with(parms, (m_LS*Live+m_s)/subs)
@@ -91,7 +64,7 @@ matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = 
   # correct for overshooting death prob
   #death[death > 1] <- 1
   
-  regeneration_G <- with(parms, aridity*(R + fg*Q_A)/subs)
+  regeneration_G <- with(parms, (1-aridity)*(R + fg*Q_AS)/subs)
   degradation <- with(parms, ((m_LG*Live+ m_g) /subs))
   
   # check for sum of probabilities to be inferior 1 and superior 0
