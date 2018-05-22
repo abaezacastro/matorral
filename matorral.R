@@ -16,8 +16,7 @@ matorral$parms <- list(
   betaS = 4, # colonization rate sclerophylls 
   betaA = 7,  # colonization rate Acacia
   R = 1,      # regeneration rate of grass
-  fas =1,      # local fascilitation on Sclerophylls 
-  a = 7,      # half saturation constant of effect of livestock on Acacia recrutment
+  l = 7,      # half saturation constant of effect of livestock on Acacia recrutment
   aridity = 0,  # Aridity
   del = 0.9,  	# seeds dispersed; (1-del) seeds on nearest neighbourhood 
   fg = 0.3, 		# local fascilitation grass
@@ -30,7 +29,7 @@ matorral$parms <- list(
   ### livestock parameter: 
   herd_size = 20# number of animals per hectare
 )
-matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = matorral$parms$herd_size, ...) {
+matorral$update <- function(x_old, parms, subs = 12, ...) {
 
    for(ss in 1:subs) {
     # creates variable "pod_used" in environment of function ca()
@@ -48,24 +47,22 @@ matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = 
   # count local density of occupied fields of S and A for each cell: 
   parms$Q_A <- count(x_old, "A")/4 
   parms$Q_S <- count(x_old, "S")/4 
-  parms$Q_AS <- parms$Q_A + parms$Q_S
-  #parms$perhectare <- prod(x_old$dim)/(200*200)
-  parms$Live <-livestock #*parms$perhectare
+  parms$Q_AS <- parms$Q_A + parms$Q_S # parameter for facilitation effect of woody vegetation (A & F) 
   # calculate recolonisation rates of A cells
-  recolonisation_A <- with(parms, betaA*(1-aridity)*(del*rho$A*(Live/(a+Live))+(1-del)*Q_A)/subs)
+  recolonisation_A <- with(parms, betaA*(1-aridity)*(del*rho$A*(herd_size/(l+herd_size))+(1-del)*Q_A)/subs)
   
   # calculate recolonisation rates of S cells
   recolonisation_S <- with(parms, betaS*(1-aridity)*fss*Q_S/subs)
   
   # calculate death rates
-  death_S <- with(parms, (m_LS*Live+m_s)/subs)
-  death_A <- with(parms, (m_LA*Live+m_a*(n_A+ic_A*Q_A))/subs)
+  death_S <- with(parms, (m_LS*herd_size+m_s)/subs)
+  death_A <- with(parms, (m_LA*herd_size+m_a*(n_A+ic_A*Q_A))/subs)
   
-  # correct for overshooting death prob
+  # correct for overshooting death probHYBJUBY
   #death[death > 1] <- 1
   
   regeneration_G <- with(parms, (1-aridity)*(R + fg*Q_AS)/subs)
-  degradation <- with(parms, ((m_LG*Live+ m_g) /subs))
+  degradation <- with(parms, ((m_LG*herd_size+ m_g) /subs))
   
   # check for sum of probabilities to be inferior 1 and superior 0
   if(any(c(recolonisation_S+recolonisation_A+degradation,recolonisation_S + recolonisation_A, death_A,death_S, regeneration_G) > 1 )) warning(paste("a set probability is exceeding 1 in run", 3, "time step", i, "! decrease delta!!!")) 
@@ -78,7 +75,7 @@ matorral$update <- function(x_old, parms=matorral$parms, subs = 12, livestock = 
   x_new$cells[which(x_old$cells == "G" & rnum <= recolonisation_S + recolonisation_A & recolonisation_S <= recolonisation_A )] <- "A"
   x_new$cells[which(x_old$cells == "A"  & rnum <= death_A)] <- "D"
   x_new$cells[which(x_old$cells == "S"  & rnum <= death_S)] <- "D"
-  x_new$cells[which(x_old$cells == "G"  & rnum > recolonisation_S + recolonisation_A & rnum <= recolonisation_S + recolonisation_A+degradation)] <- "D"  
+  x_new$cells[which(x_old$cells == "G"  & rnum > (recolonisation_S + recolonisation_A) & rnum <= (recolonisation_S + recolonisation_A+degradation))] <- "D"  
   x_new$cells[which(x_old$cells == "D"   & rnum <= regeneration_G)] <- "G"
   
   

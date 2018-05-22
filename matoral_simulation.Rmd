@@ -1,0 +1,365 @@
+---
+title: "Single simulation matorral"
+author: "Andres Baeza"
+date: "February 11, 2018"
+output: html_document
+---
+
+
+```{r}
+require(caspr)
+require(poweRlaw)
+source('plfit_sc.R')
+source('simfunctions.r')
+```
+
+
+#Alternative statable states
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R') #read source code for the matorral processes
+herd=seq(0,40,2)
+IC=c(0.1,0.6)
+count=0
+for(ar in seq(0,0.8,0.2)){
+ for(i in 1:length(herd)){
+  count=count+1
+    mIH<-init_landscape(c("D","G","A","S"),c(0.1,0.1,IC[1],IC[2]),width = 100)
+    matorral$parms$herd_size<-herd[i]
+    matorral$parms$aridity<-ar
+    mat_h<-ca(mIH,matorral,t_max = 500,seed=5000,parms=matorral$parms)
+
+    mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,IC[2],IC[1]),width = 100)
+    mat_l<-ca(mIL,matorral,t_max = 500,seed=5000,parms=matorral$parms)
+    if (count==1){
+      res_ASS=c(mean(tail(mat_l$cover$S,10)),mean(tail(mat_h$cover$S,10)),herd[i],ar)
+    }
+    else{
+          res_ASS=unname(rbind(res_ASS,c(mean(tail(mat_l$cover$S,10)),mean(tail(mat_h$cover$S,10)),herd[i],ar)))
+    }
+    save(res_ASS,file="results_ASS_rev1")
+    print(c(ar,i))
+      }
+ }
+
+```
+
+
+
+
+
+#statistical indicators
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+herd=seq(12,27,1)
+matorral$parms$aridity<-0
+#par_alpha=matrix(ncol=length(herd),nrow=20)
+par_AIC=matrix(nrow=length(herd),ncol=20)
+par_pv=matrix(nrow=length(herd),ncol=20)
+for(j in 1:20){
+  par_xmin=numeric(length(herd))
+  for(i in 1:length(herd)){
+    mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 100)
+    matorral$parms$herd_size<-herd[i]
+    laa<-ca(mIL,matorral,saveeach=100,t_max = 300,parms=matorral$parms)
+    ptchs=patches(laa$landscapes[[4]],'S')
+    m=displ$new(ptchs)
+    m$setXmin(estimate_xmin(m))
+    m$setPars(estimate_pars(m))
+    par_xmin[i]<-m$xmin
+    bs_p = bootstrap_p(m)
+    par_pv[i,j]=bs_p$p
+    pf<-as.matrix(laa$landscapes[[4]])
+    pf=(pf=="S")
+    tind<-spatialwarnings::indicator_psdtype(pf, xmin = m$xmin,
+                    merge = FALSE, 
+                    fit_lnorm = FALSE,
+                    xmin_bounds = NULL, best_by = "AIC", wrap = TRUE)
+  
+    par_AIC[i,j]<- (tind$AIC[1]-tind$AIC[2])/(tind$AIC[1]+tind$AIC[2])
+
+    Result=list(par_AIC,par_pv)
+    save(Result,file="results_EWSTest_C")
+    print(c(i,j))
+      }
+}
+
+```
+
+#Landscapes and frequency distributions 
+```{r,fig.height=12,fig.width=18}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+colores<-c("darkred","lightgreen","yellow","darkgreen")
+
+mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 100)
+
+
+matorral$parms$herd_size<-16
+matorral$parms$aridity<-0
+laa<-ca(mIL,matorral,saveeach=100,t_max = 300,seed=3000,parms=matorral$parms)
+ptchs=patches(laa$landscapes[[4]],'S')
+  m=displ$new(ptchs)
+    m$setXmin(estimate_xmin(m))
+    m$setPars(estimate_pars(m))
+    pf<-as.matrix(laa$landscapes[[4]])
+    pf=(pf=="S")
+    
+SPW_aa=spatialwarnings::patchdistr_spews(pf, merge = FALSE, fit_lnorm = FALSE, best_by = "AIC",
+xmin = 1, wrap = TRUE)
+
+    
+    
+    
+matorral$parms$herd_size<-18
+matorral$parms$aridity<-0
+lba<-ca(mIL,matorral,saveeach=100,t_max = 300,seed=3000,parms=matorral$parms)
+ptchslba=patches(lba$landscapes[[4]],'S')
+  mlba=displ$new(ptchslba)
+    mlba$setXmin(estimate_xmin(mlba))
+    mlba$setPars(estimate_pars(mlba))
+    pf<-as.matrix(lba$landscapes[[4]])
+    pf=(pf=="S")
+    SPW_ba=spatialwarnings::patchdistr_spews(pf, merge = FALSE, fit_lnorm = FALSE, best_by = "AIC",xmin =  1, xmin_bounds = NULL, wrap = TRUE)
+
+    
+    
+    
+    matorral$parms$herd_size<-23
+matorral$parms$aridity<-0
+lca<-ca(mIL,matorral,saveeach=100,t_max = 300,seed=3000,parms=matorral$parms)
+ptchslca=patches(lca$landscapes[[4]],'S')
+  mlca=displ$new(ptchslca)
+    mlca$setXmin(estimate_xmin(mlca))
+    mlca$setPars(estimate_pars(mlca))
+    pf<-as.matrix(lca$landscapes[[4]])
+    pf=(pf=="S")
+    SPW_ca=spatialwarnings::patchdistr_spews(pf, merge = FALSE, fit_lnorm = FALSE, best_by = "AIC",
+xmin = 1, wrap = TRUE)
+
+
+tiff(filename ="Landscapes_patterns.tiff",width = 18,height = 6,units = "cm",res = 300)
+par(mfrow=c(1,3),mar=c(1,1,1,1))
+plot(laa$landscapes[[4]],col=colores)
+plot(lba$landscapes[[4]],col=colores)
+plot(lca$landscapes[[4]],col=colores)
+dev.off()
+
+
+tiff(filename ="Landscapes_EWS.tiff",width = 18,height = 5,units = "cm",res = 300)
+p1=spatialwarnings::plot_distr(SPW_aa, along = NULL, best_only = TRUE, plrange = F)
+p2=spatialwarnings::plot_distr(SPW_ba, along = NULL, best_only = TRUE, plrange = F)
+p3=spatialwarnings::plot_distr(SPW_ca, along = NULL, best_only = TRUE, plrange = F)
+gridExtra::grid.arrange(p1,p2,p3,ncol=3)
+dev.off()
+
+```
+
+
+
+#Animation
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/animate_threeplots.R')
+
+mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 200)
+matorral$cols <-colores
+
+matorral$parms$herd_size<-18
+matorral$parms$aridity<-0
+laa<-ca(mIL,matorral,saveeach=1,t_max = 100,seed=4000,parms=matorral$parms)
+
+matorral$parms$herd_size<-25
+matorral$parms$aridity<-0
+lba<-ca(mIL,matorral,saveeach=1,t_max = 100,seed=4000,parms=matorral$parms)
+
+matorral$parms$herd_size<-27
+matorral$parms$aridity<-0
+lca<-ca(mIL,matorral,saveeach=1,t_max = 100,seed=4000,parms=matorral$parms)
+#ca_animate(lba, filename = "matorral_ptpl",type = "mp4", speed = 0.8)
+ca_animate_threeplots(laa,lba,lca, filename = "matorral_ptpl",type = "avi", speed = 1)
+```
+
+
+
+Time series rotations
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/ca_ts_adapted.R')
+herd=seq(0,50,5)
+
+N=c(5,15)#rotation_time
+Arid=c(0,0.5)
+mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 100)
+count=0
+for(j in c(1,2)){
+  for(i in 1:length(herd)){
+    count=count+1
+   source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+    matorral$parms$aridity<-Arid[j]
+    matorral$parms$herd_size<-rep(c(rep(herd[i],N[1]),rep(0,N[1])),length.out=500)
+    parameters_list<-parms_timeseries(matorral$parms,500)    
+    mat_l<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
+
+    source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+    matorral$parms$aridity<-Arid[j]
+    matorral$parms$herd_size<-rep(c(rep(herd[i],N[2]),rep(0,N[2])),length.out=500)
+    parameters_list<-parms_timeseries(matorral$parms,500)
+    mat_h<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
+    
+    if (count==1){
+      res_ASS_Rot=c(mean(tail(mat_l$cover$S,10)),mean(tail(mat_h$cover$S,10)),herd[i],Arid[j])
+    }
+    else{
+      res_ASS_Rot=unname(rbind(res_ASS_Rot,c(mean(tail(mat_l$cover$S,10)),mean(tail(mat_h$cover$S,10)),herd[i],Arid[j])))
+    }
+    save(res_ASS_Rot,file="results_Rotational_rev1b")
+    print(c(count,Arid[j],herd[i]))
+
+    
+    
+    
+  }
+  
+}
+
+```
+
+Figure 5
+```{r}
+setwd("C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/")
+load("results_Rotational_rev1b")
+res_ASS_Rot<-as.data.frame(res_ASS_Rot)
+colnames(res_ASS_Rot)<-c("5","15","Livestock","Aridity")
+res_ASS_Rot$Aridity=as.factor(res_ASS_Rot$Aridity)
+PVR=reshape(res_ASS_Rot,direction="long", varying=colnames(res_ASS_Rot)[1:2],times=colnames(res_ASS_Rot)[1:2],v.names ="forest_cover",timevar ="Rotation",idvar=c("Livestock","Aridity"))
+
+colores=c("#d7191c",
+"#fdae61",
+"lightgreen",
+"#a6d96a",
+"#1a9641")
+
+
+P<-ggplot(data=PVR,aes(x=Livestock,y=forest_cover,colour=Aridity,shape=Rotation))+
+scale_colour_manual(name = "Aridity",labels = c("0","0.5"),values = colores[c(5,1)])+
+  scale_x_continuous(limits=c(0,50))+
+  geom_point()+
+  labs(title="",x="Livestock Population Size",y="Area [% total] covered by forest [F*]")+
+  theme(axis.title.y = element_text(size = rel(1.6)))+
+  theme(axis.title.x = element_text(size = rel(1.6)))+
+  theme(plot.title = element_text(size = rel(1.8)))+
+  theme(legend.title= element_text(size = rel(1.4)))+
+  theme(legend.text= element_text(size = rel(1.4)))+
+  theme(axis.text= element_text(size = rel(1),colour = 'black'))+
+  theme_bw()
+
+
+P
+
+tiff(filename ="Alternative_stabe_StatesRotation_rev1.tiff",width = 18,height = 16,units = "cm",res = 300)
+
+P
+dev.off()
+
+```
+
+
+
+
+perturbation after the tipping point
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/ca_ts_adapted.R')
+herd=28
+matorral$parms$aridity<-0
+matorral$parms$herd_size=herd
+mIL<-init_landscape(c("D","G","A","S"),c(0.4,0.2,0.2,0.2),width = 100)
+
+Time_rot=seq(3,33,2)#rotation_time
+count=0
+
+for(j in 6:20){  
+    for(ii in 1:length(Time_rot)){
+    count=count+1
+
+     source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+     matorral$parms$aridity<-0 # tipping point
+     matorral$parms$herd_size<-rep(c(rep(0,Time_rot[ii]),rep(herd,Time_rot[ii])),length.out=500)
+    parameters_list<-parms_timeseries(matorral$parms,500)    
+    mat_la<-ca_ts(mIL,matorral,t_max = 500,parms=parameters_list)
+
+
+    
+    if (count==1){
+      res_ASS_TPpertu=c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),Time_rot[ii],j)
+   
+#       ts_res_ASS_TPpertu=cbind(mat_la$cover$S,seq(1,501,by=1),rep(Time_rot[ii],length(501)))
+      
+      }
+    else{
+      res_ASS_TPpertu=unname(rbind(res_ASS_TPpertu,c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),Time_rot[ii],j)))
+    
+#      ts_res_ASS_TPpertu=rbind(ts_res_ASS_TPpertu,cbind(mat_la$cover$S,seq(1,501,by=1),rep(Time_rot[ii],length(501))))
+    }
+
+    save(res_ASS_TPpertu,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/results_resting_and_rotation")
+ #       save(ts_res_ASS_TPpertu,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/results_Rotation_timeseries")
+    print(c(j,count,Time_rot[ii]))
+
+  }
+}
+```
+
+#plot strategies
+```{r}
+ plot.ts(tail(rep(c(rep(herd+5,10),rep(herd-5,10)),length.out=500),100),ylim=c(0,50))
+
+  lines(tail(rep(c(rep(herd+5,5),rep(herd-5,5)),length.out=500),100),col="red")
+  lines(tail(rep(c(rep(herd+10,5),rep(herd-10,5)),length.out=500),100),col="blue")
+  
+```
+
+
+Sensitivity to livestock half saturation constant. Parameter ($l$)
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/ca_ts_adapted.R')
+matorral$parms$aridity<-0
+matorral$parms$herd_size=24
+matorral$parms$=
+mIL<-init_landscape(c("D","G","A","S"),c(0.2,0.2,0.2,0.2),width = 100)
+mat_la<-ca(mIL,matorral,t_max = 500,seed=6000,matorral$parms)
+  
+
+mIL<-mat_la$landscapes[[6]]
+
+  Time_rot=seq(2,16,2)#rotation_time
+
+
+count=0
+  for(ii in 1:length(Time_rot)){
+    count=count+1
+    source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+    matorral$parms$aridity<-0 # tipping point
+    matorral$parms$herd_size<-rep(c(rep(0,Time_rot[ii]),rep(herd,Time_rot[ii])),length.out=500)
+    parameters_list<-parms_timeseries(matorral$parms,500)    
+    mat_la<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
+
+
+        source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+    matorral$parms$aridity<-0 # tipping point
+    matorral$parms$herd_size<-rep(c(rep(herd,Time_rot[ii]),rep(0,Time_rot[ii])),length.out=500)
+    parameters_list<-parms_timeseries(matorral$parms,500)    
+    mat_lb<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
+    
+    
+    if (count==1){
+      res_ASS_TPpertu=c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),mean(tail(mat_lb$cover$S,60)),mean(tail(mat_lb$cover$A,60)),mean(tail(mat_lb$cover$D,60)),Time_rot[ii])
+    }
+    else{
+      res_ASS_TPpertu=unname(rbind(res_ASS_TPpertu,c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),mean(tail(mat_lb$cover$S,60)),mean(tail(mat_lb$cover$A,60)),mean(tail(mat_lb$cover$D,60)),Time_rot[ii])))
+    }
+    save(res_ASS_TPpertu,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/results_Rotation_TandNB")
+    print(c(count,Time_rot[ii]))
+
+  }
+
+```
+
+  
