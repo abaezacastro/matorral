@@ -129,3 +129,47 @@ gridExtra::grid.arrange(P_rot2,gridExtra::arrangeGrob(P, P_rot1, ncol = 2), ncol
 tiff(filename ="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/Rotation_fig5_rev1.tiff",width = 16,height = 12,units = "cm",res = 900)
 gridExtra::grid.arrange(P_rot2,gridExtra::arrangeGrob(P, P_rot1, ncol = 2), ncol=1)
 dev.off()
+
+
+################################################
+#supporting material
+################################################
+#sensitivity to parameter l
+
+
+load("C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/res_l_sensitivity")
+colnames(res_l_sensitivity)=c("F","A","D","l")
+ res_l_sensitivity=as.data.frame(res_l_sensitivity)
+
+tiff(filename ="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/FigureS1.tiff",width = 12,height = 8,units = "cm",res = 900)
+
+ggplot()+geom_smooth(data=res_l_sensitivity,aes(x=l,y=F),colour="black")+
+geom_point(data=res_l_sensitivity,aes(x=l,y=F))+
+labs(title="",x="half-saturation livestock constant",y="Area covered by forest, F*")+
+theme_bw()
+dev.off()
+#sensitivity to parameter mL_x for x={F,A,G}
+
+load("C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/res_mus_sensitivity")
+colnames(res_mus_sensitivity)=c("F","A","D","muL_F","muL_A","muL_G")
+ res_mus_sensitivity=as.data.frame(res_mus_sensitivity)
+
+require(sensitivity)
+x=pcc(X=res_mus_sensitivity[,c(4,5,6)],y=res_mus_sensitivity[,1],rank=F)    #calculate patial correlation
+tiff(filename ="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/FigureS2.tiff",width = 12,height = 8,units = "cm",res = 900)
+
+barplot(as.vector(x$PCC[[1]]),names.arg = c(expression(m[F]^L),expression(m[A]^L),expression(m[G]^L)),cex.names=0.7,main='',ylab=expression(rho))   # barplot 1
+dev.off()
+
+tiff(filename ="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/FigureS3.tiff",width = 12,height = 8,units = "cm",res = 900)
+
+ggplot()+geom_smooth(data=res_mus_sensitivity, aes(x=muL_F,y=F),colour="black")+
+geom_point(data=res_mus_sensitivity, aes(x=muL_F,y=F))+
+geom_point(data=res_mus_sensitivity, aes(x=muL_F,y=A),colour="yellow")+
+xlab(expression(m[F]^L))+
+ylab(expression(F))+
+theme_bw()
+dev.off()
+
+
+ 

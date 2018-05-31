@@ -307,59 +307,84 @@ for(j in 6:20){
 }
 ```
 
-#plot strategies
-```{r}
- plot.ts(tail(rep(c(rep(herd+5,10),rep(herd-5,10)),length.out=500),100),ylim=c(0,50))
-
-  lines(tail(rep(c(rep(herd+5,5),rep(herd-5,5)),length.out=500),100),col="red")
-  lines(tail(rep(c(rep(herd+10,5),rep(herd-10,5)),length.out=500),100),col="blue")
-  
-```
 
 
 Sensitivity to livestock half saturation constant. Parameter ($l$)
 ```{r}
-source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/ca_ts_adapted.R')
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
 matorral$parms$aridity<-0
-matorral$parms$herd_size=24
-matorral$parms$=
-mIL<-init_landscape(c("D","G","A","S"),c(0.2,0.2,0.2,0.2),width = 100)
-mat_la<-ca(mIL,matorral,t_max = 500,seed=6000,matorral$parms)
-  
+matorral$parms$herd_size=26
 
-mIL<-mat_la$landscapes[[6]]
+l_sensitivity=seq(1,15,1)
 
-  Time_rot=seq(2,16,2)#rotation_time
 
+mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 100)
 
 count=0
-  for(ii in 1:length(Time_rot)){
+for(j in 1:20){
+  for(ii in 1:length(l_sensitivity)){
     count=count+1
-    source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
-    matorral$parms$aridity<-0 # tipping point
-    matorral$parms$herd_size<-rep(c(rep(0,Time_rot[ii]),rep(herd,Time_rot[ii])),length.out=500)
-    parameters_list<-parms_timeseries(matorral$parms,500)    
-    mat_la<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
+    matorral$parms$l=l_sensitivity[ii]
+    mat_la<-ca(mIL,matorral,t_max = 500,parms=matorral$parms)
 
 
-        source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
-    matorral$parms$aridity<-0 # tipping point
-    matorral$parms$herd_size<-rep(c(rep(herd,Time_rot[ii]),rep(0,Time_rot[ii])),length.out=500)
-    parameters_list<-parms_timeseries(matorral$parms,500)    
-    mat_lb<-ca_ts(mIL,matorral,t_max = 500,seed=6000,parms=parameters_list)
-    
-    
     if (count==1){
-      res_ASS_TPpertu=c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),mean(tail(mat_lb$cover$S,60)),mean(tail(mat_lb$cover$A,60)),mean(tail(mat_lb$cover$D,60)),Time_rot[ii])
+      res_l_sensitivity=c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),l_sensitivity[ii])
     }
     else{
-      res_ASS_TPpertu=unname(rbind(res_ASS_TPpertu,c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),mean(tail(mat_lb$cover$S,60)),mean(tail(mat_lb$cover$A,60)),mean(tail(mat_lb$cover$D,60)),Time_rot[ii])))
+      res_l_sensitivity=unname(rbind(res_l_sensitivity,c(mean(tail(mat_la$cover$S,60)),mean(tail(mat_la$cover$A,60)),mean(tail(mat_la$cover$D,60)),l_sensitivity[ii])))
     }
-    save(res_ASS_TPpertu,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/results_Rotation_TandNB")
-    print(c(count,Time_rot[ii]))
+    save(res_l_sensitivity,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/res_l_sensitivity")
+    print(c(count,l_sensitivity[ii]))
 
   }
-
+}
 ```
 
   
+Sensitivity of forest coverage $F^{*}$ to livestock-induce mortality, $m_{x}$.
+```{r}
+source('C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/matorral.R')
+matorral$parms$aridity<-0
+matorral$parms$herd_size=26
+matorral$parms$m_LG
+
+mu_F=seq(1/30,1/80,length.out = 100)
+mu_A=seq(1/30,1/80,length.out = 100)
+mu_G=seq(1/80,1/200,length.out = 100)
+require(tgp) #load package tgp
+HC <- lhs(150,rbind(                                               #generate the limits of the hypercube
+  c(1/30,1/80),             #mu_F
+  c(1/30,1/80),             #mu_A
+  c(1/80,1/200)             #mu_G
+))
+#colnames(HC)<-c(
+ # "muL_F",
+#  "muL_A",
+#  "muL_G")
+
+mIL<-init_landscape(c("D","G","A","S"),c(0.1,0.1,0.1,0.7),width = 100)
+
+count=0
+for(j in 1:2){
+  for(ii in 1:length(HC[,1])){
+    count=count+1
+    matorral$parms$m_LS=HC[ii,1]
+    matorral$parms$m_LA=HC[ii,2]
+    matorral$parms$m_LG=HC[ii,3]
+    
+    mat_la<-ca(mIL,matorral,t_max = 300,parms=matorral$parms)
+
+    if (count==1){
+      res_mus_sensitivity=c(mean(tail(mat_la$cover$S,30)),mean(tail(mat_la$cover$A,30)),mean(tail(mat_la$cover$D,30)),HC[ii,])
+    }
+    else{
+      res_mus_sensitivity=unname(rbind(res_mus_sensitivity,c(mean(tail(mat_la$cover$S,30)),mean(tail(mat_la$cover$A,30)),mean(tail(mat_la$cover$D,30)),HC[ii,])))
+    }
+    save(res_mus_sensitivity,file="C:/Users/abaezaca/Dropbox (ASU)/Vegetation_project/matorral/res_mus_sensitivity")
+    print(count)
+
+  }
+}
+```
+
